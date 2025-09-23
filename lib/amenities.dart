@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
+import '../config/api.dart';
 
 class amenities extends StatefulWidget {
   const amenities({super.key});
@@ -21,7 +21,7 @@ class _AmenitiesPageState extends State<amenities> {
 
   Future<void> fetchAmenities() async {
     final response = await http.get(
-      Uri.parse("http://192.168.100.238/flutter_api/get_amenities.php"),
+      Uri.parse(ApiConfig.getAmenities),
     );
 
     if (response.statusCode == 200) {
@@ -37,7 +37,7 @@ class _AmenitiesPageState extends State<amenities> {
  Future<void> _deleteAmenity(String id) async {
   try {
     final response = await http.post(
-      Uri.parse("http://192.168.100.238/flutter_api/delete_amenities.php"),
+      Uri.parse(ApiConfig.deleteAmenities),
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -162,7 +162,7 @@ class _AmenitiesPageState extends State<amenities> {
 
   Widget _amenityCard(Map<String, dynamic> amenity) {
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: 300),
+      constraints: BoxConstraints(maxWidth: 300,),
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

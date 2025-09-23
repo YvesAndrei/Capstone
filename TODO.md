@@ -1,18 +1,9 @@
-# TODO: Replace hardcoded local IP URLs with ApiConfig.baseUrl
-
-- [ ] Edit lib/main.dart: Replace hardcoded URLs with ApiConfig.baseUrl
-- [ ] Edit lib/profile_page.dart: Replace hardcoded URLs
-- [ ] Edit lib/packages_page.dart: Replace hardcoded URLs
-- [ ] Edit lib/rooms_360_view.dart: Replace hardcoded URLs
-- [ ] Edit lib/uploads_page.dart: Replace hardcoded URLs
-- [ ] Edit lib/User.dart: Replace hardcoded URLs
-- [ ] Edit lib/user_reservations.dart: Replace hardcoded URLs
-- [ ] Edit lib/user_selection.dart: Replace hardcoded URLs
-- [ ] Edit lib/chatpage_updated.dart: Replace hardcoded URLs
-- [ ] Edit lib/realtime_chat_container.dart: Replace hardcoded URLs
-- [ ] Edit lib/createuser.dart: Replace hardcoded URLs
-- [ ] Edit lib/amenities.dart: Replace hardcoded URLs
-- [ ] Edit lib/carousel.dart: Replace hardcoded URLs
-- [ ] Edit test_database_connection.dart: Replace hardcoded URLs
-- [ ] Check for any other files with hardcoded IPs
-- [ ] Test the app to ensure all API calls work
+- [ ] Update appBar title in User widget to white font color
+- [ ] Update appBar title in ReservationForm to white font color
+- [ ] Update 'Current User ID' text in User body to white
+- [ ] Update 'Make a Reservation' button text to white
+- [ ] Update horizontal menu TextButton labels to white
+- [ ] Update 'Making reservation for User ID' text in ReservationForm to white
+- [ ] Update dropdown child texts in ReservationForm to white
+- [ ] Update date picker text in ReservationForm to white
+- [ ] Update 'Submit Reservation' button text to white

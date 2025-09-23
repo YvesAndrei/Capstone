@@ -1,0 +1,98 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter build web
+
+## exception
+
+FileSystemException: FileSystemException: Failed to decode data using encoding 'utf-8', path = 'E:\Pang Capstone\Flutter Apps\flutter_application_1\.gitignore'
+
+```
+#0      _File._tryDecode (dart:io/file_impl.dart:708:7)
+#1      _File.readAsStringSync (dart:io/file_impl.dart:719:7)
+#2      _File.readAsLinesSync (dart:io/file_impl.dart:725:36)
+#3      ForwardingFile.readAsLinesSync (package:file/src/forwarding/forwarding_file.dart:107:16)
+#4      ForwardingFile.readAsLinesSync (package:file/src/forwarding/forwarding_file.dart:107:16)
+#5      ProjectMigrator.processFileLines (package:flutter_tools/src/base/project_migrator.dart:40:37)
+#6      ScrubGeneratedPluginRegistrant.migrate (package:flutter_tools/src/web/migrations/scrub_generated_plugin_registrant.dart:28:7)
+#7      ProjectMigration.run (package:flutter_tools/src/base/project_migrator.dart:86:22)
+#8      WebBuilder.buildWeb (package:flutter_tools/src/web/compile.dart:85:21)
+<asynchronous suspension>
+#9      BuildWebCommand.runCommand (package:flutter_tools/src/commands/build_web.dart:282:5)
+<asynchronous suspension>
+#10     FlutterCommand.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command.dart:1581:27)
+<asynchronous suspension>
+#11     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#12     CommandRunner.runCommand (package:args/command_runner.dart:212:13)
+<asynchronous suspension>
+#13     FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:503:9)
+<asynchronous suspension>
+#14     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#15     FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:438:5)
+<asynchronous suspension>
+#16     run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:98:11)
+<asynchronous suspension>
+#17     AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#18     main (package:flutter_tools/executable.dart:101:3)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter (Channel stable, 3.35.4, on Microsoft Windows [Version 10.0.19045.6332], locale en-US) [326ms]
+    [32m•[39m Flutter version 3.35.4 on channel stable at E:\Pang Capstone\flutter_windows_3.32.5-stable\flutter
+    [32m•[39m Upstream repository https://github.com/flutter/flutter.git
+    [32m•[39m Framework revision d693b4b9db (7 days ago), 2025-09-16 14:27:41 +0000
+    [32m•[39m Engine revision c298091351
+    [32m•[39m Dart version 3.9.2
+    [32m•[39m DevTools version 2.48.0
+    [32m•[39m Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-lldb-debugging
+
+[32m[✓][39m Windows Version (10 Pro 64-bit, 22H2, 2009) [1,818ms]
+
+[33m[!][39m Android toolchain - develop for Android devices (Android SDK version 35.0.1) [1,754ms]
+    [32m•[39m Android SDK at C:\Users\MC\AppData\Local\Android\Sdk
+    [32m•[39m Emulator version 35.5.10.0 (build_id 13402964) (CL:N/A)
+    [32m•[39m Platform android-35, build-tools 35.0.1
+    [32m•[39m Java binary at: E:\Android\jbr\bin\java
+      This is the JDK bundled with the latest Android Studio installation on this machine.
+      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
+    [32m•[39m Java version OpenJDK Runtime Environment (build 21.0.6+-13368085-b895.109)
+    [33m![39m Some Android licenses not accepted. To resolve this, run: flutter doctor --android-licenses
+
+[32m[✓][39m Chrome - develop for the web [82ms]
+    [32m•[39m Chrome at C:\Users\MC\AppData\Local\Google\Chrome\Application\chrome.exe
+
+[32m[✓][39m Visual Studio - develop Windows apps (Visual Studio Community 2022 17.14.6 (June 2025)) [81ms]
+    [32m•[39m Visual Studio at C:\Program Files\Microsoft Visual Studio\2022\Community
+    [32m•[39m Visual Studio Community 2022 version 17.14.36212.18
+    [32m•[39m Windows 10 SDK version 10.0.26100.0
+
+[32m[✓][39m Android Studio (version 2024.3.2) [8ms]
+    [32m•[39m Android Studio at E:\Android
+    [32m•[39m Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    [32m•[39m Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    [32m•[39m Java version OpenJDK Runtime Environment (build 21.0.6+-13368085-b895.109)
+
+[32m[✓][39m VS Code (version 1.104.1) [6ms]
+    [32m•[39m VS Code at C:\Users\MC\AppData\Local\Programs\Microsoft VS Code
+    [32m•[39m Flutter extension version 3.118.0
+
+[32m[✓][39m Connected device (3 available) [157ms]
+    [32m•[39m Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version 10.0.19045.6332]
+    [32m•[39m Chrome (web)      • chrome  • web-javascript • Google Chrome 140.0.7339.129
+    [32m•[39m Edge (web)        • edge    • web-javascript • Microsoft Edge 140.0.3485.66
+
+[32m[✓][39m Network resources [304ms]
+    [32m•[39m All expected network resources are available.
+
+[33m![39m Doctor found issues in 1 category.
+```

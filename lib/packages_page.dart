@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../config/api.dart';
 
 class PackagesPage extends StatefulWidget {
   const PackagesPage({super.key});
@@ -37,10 +36,8 @@ class _PackagesPageState extends State<PackagesPage> {
   Future<void> _deletePackage(String id) async {
     final response = await http.post(
       Uri.parse("http://192.168.100.238/flutter_api/delete_package.php"),
-      body: {"package_type_id": id},
+      body: {"id": id},
     );
-
-    print("DELETE RESPONSE: ${response.body}");
 
     if (response.statusCode == 200) {
       final jsonData = json.decode(response.body);
@@ -58,174 +55,93 @@ class _PackagesPageState extends State<PackagesPage> {
     }
   }
 
-  Widget _formField(String label, TextEditingController controller,
-      {TextInputType inputType = TextInputType.text}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: inputType,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(),
-        ),
-        validator: (value) => value == null || value.isEmpty ? "Enter $label" : null,
-      ),
-    );
-  }
-
   void _showPackageForm(BuildContext context, [Map<String, dynamic>? pkg]) {
     final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: pkg?['package_name'] ?? '');
-    final typeController = TextEditingController(text: pkg?['day_type'] ?? '');
-    final scheduleController = TextEditingController(text: pkg?['week_schedule'] ?? '');
-    final hoursController = TextEditingController(text: pkg?['hours']?.toString() ?? '');
-    final priceController = TextEditingController(text: pkg?['price']?.toString() ?? '');
-    final amenitiesController = TextEditingController(text: pkg?['amenities_id']?.toString() ?? '');
-
-    final dayTypeOptions = ['Day Tour', 'Overnight'];
-    final weekScheduleOptions = ['Weekend', 'Weekday'];
-    final hoursOptions = ['9 Hours', '21 Hours'];
-
-    String selectedDayType = pkg?['day_type'] ?? dayTypeOptions[0];
-    String selectedWeekSchedule = pkg?['week_schedule'] ?? weekScheduleOptions[0];
-    String selectedHours = pkg?['hours']?.toString() ?? hoursOptions[0];
+    final nameController = TextEditingController(text: pkg?['name'] ?? '');
+    final amenitiesController =
+        TextEditingController(text: pkg?['amenities'] ?? '');
 
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text(pkg == null ? "Add Package" : "Edit Package"),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _formField("Package Name", nameController),
-
-                      DropdownButtonFormField<String>(
-                        value: selectedDayType,
-                        decoration: InputDecoration(
-                          labelText: "Day Type",
-                          border: OutlineInputBorder(),
-                        ),
-                        items: dayTypeOptions
-                            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              selectedDayType = val;
-                              typeController.text = val;
-                            });
-                          }
-                        },
-                        validator: (value) =>
-                            value == null || value.isEmpty ? "Select Day Type" : null,
-                      ),
-
-                      SizedBox(height: 12),
-
-                      DropdownButtonFormField<String>(
-                        value: selectedWeekSchedule,
-                        decoration: InputDecoration(
-                          labelText: "Week Schedule",
-                          border: OutlineInputBorder(),
-                        ),
-                        items: weekScheduleOptions
-                            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              selectedWeekSchedule = val;
-                              scheduleController.text = val;
-                            });
-                          }
-                        },
-                        validator: (value) =>
-                            value == null || value.isEmpty ? "Select Week Schedule" : null,
-                      ),
-
-                      SizedBox(height: 12),
-
-                      DropdownButtonFormField<String>(
-                        value: selectedHours,
-                        decoration: InputDecoration(
-                          labelText: "Hours",
-                          border: OutlineInputBorder(),
-                        ),
-                        items: hoursOptions
-                            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              selectedHours = val;
-                              hoursController.text = val;
-                            });
-                          }
-                        },
-                        validator: (value) =>
-                            value == null || value.isEmpty ? "Select Hours" : null,
-                      ),
-
-                      SizedBox(height: 12),
-
-                      _formField("Price", priceController, inputType: TextInputType.number),
-                      _formField("Amenities ID", amenitiesController, inputType: TextInputType.number),
-                    ],
+        return AlertDialog(
+          title: Text(pkg == null ? "Add Package" : "Edit Package"),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: "Package Name",
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) => value == null || value.isEmpty
+                        ? "Enter Package Name"
+                        : null,
                   ),
-                ),
+                  SizedBox(height: 12),
+                  TextFormField(
+                    controller: amenitiesController,
+                    decoration: InputDecoration(
+                      labelText: "Amenities (one per line)",
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 4, // ✅ multi-line input
+                  ),
+                ],
               ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (!formKey.currentState!.validate()) return;
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
 
-                    final body = {
-                      "package_name": nameController.text,
-                      "day_type": typeController.text,
-                      "week_schedule": scheduleController.text,
-                      "hours": hoursController.text,
-                      "price": priceController.text,
-                      "amenities_id": amenitiesController.text,
-                    };
+                final body = {
+                  "name": nameController.text,
+                  "amenities": amenitiesController.text,
+                };
 
-                    String url = pkg == null
-                        ? "http://192.168.100.238/flutter_api/add_package.php"
-                        : "http://192.168.100.238/flutter_api/edit_package.php";
+                String url = pkg == null
+                    ? "http://192.168.100.238/flutter_api/add_package.php"
+                    : "http://192.168.100.238/flutter_api/edit_package.php";
 
-                    if (pkg != null) {
-                      body["package_type_id"] = pkg['package_type_id'].toString();
-                    }
+                if (pkg != null) {
+                  body["id"] = pkg['id'].toString();
+                }
 
-                    final response = await http.post(Uri.parse(url), body: body);
+                final response = await http.post(Uri.parse(url), body: body);
 
-                    if (response.statusCode == 200) {
-                      Navigator.pop(context);
-                      fetchPackages();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Failed to save package.")),
-                      );
-                    }
-                  },
-                  child: Text(pkg == null ? "Add" : "Update"),
-                ),
-              ],
-            );
-          },
+                if (response.statusCode == 200) {
+                  Navigator.pop(context);
+                  fetchPackages();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Failed to save package.")),
+                  );
+                }
+              },
+              child: Text(pkg == null ? "Add" : "Update"),
+            ),
+          ],
         );
       },
     );
   }
 
   Widget _bootstrapStyleCard(Map<String, dynamic> pkg) {
+    final amenities = (pkg['amenities'] as String? ?? '')
+        .split('\n')
+        .where((a) => a.trim().isNotEmpty)
+        .toList();
+
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: 400),
       child: Card(
@@ -249,17 +165,24 @@ class _PackagesPageState extends State<PackagesPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    pkg['package_name'],
+                    pkg['name'],
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '${pkg['day_type']} - ${pkg['week_schedule']}',
-                    style: TextStyle(color: Colors.grey[700]),
+                    "Amenities:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
-                  Text('Hours: ${pkg['hours']}'),
-                  Text('Price: ₱${pkg['price']}'),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: amenities
+                        .map((a) => Chip(
+                              label: Text(a, style: TextStyle(fontSize: 12)),
+                              backgroundColor: Colors.blue[50],
+                            ))
+                        .toList(),
+                  ),
                   SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -270,7 +193,7 @@ class _PackagesPageState extends State<PackagesPage> {
                       ),
                       IconButton(
                         icon: Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _confirmDelete(pkg['package_type_id'].toString()),
+                        onPressed: () => _confirmDelete(pkg['id'].toString()),
                       ),
                     ],
                   )

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 // Define the ImageCarousel widget here or import it if it's in a separate file
 // For simplicity, I'm including it directly in main.dart for this example.
@@ -12,13 +13,12 @@ class ImageCarousel extends StatefulWidget {
 }
 
 class _ImageCarouselState extends State<ImageCarousel> {
-  // List of local asset paths for the carousel images
-  // IMPORTANT: You need to add these paths to your pubspec.yaml under 'assets:'
+  // List of local asset paths for the carousel images using actual assets from pubspec.yaml
   final List<String> imageUrls = [
-    'assets/images/image1.png', // Replace with your actual image paths
-    'assets/images/image2.png',
-    'assets/images/image3.png',
-    'assets/images/image4.png',
+    'assets/pict1.jpg',
+    'assets/pict2.jpg',
+    'assets/pict3.jpg',
+    'assets/pict4.jpg',
   ];
 
   // Controller for the PageView to manage pages
@@ -127,25 +127,67 @@ class CreateUserPage extends StatefulWidget {
 
 class _CreateUserPageState extends State<CreateUserPage> {
   List<dynamic> users = [];
+  bool isLoading = true;
+  String? errorMessage;
 
   @override
   void initState() {
     super.initState();
     fetchUsers();
+    // Auto-refresh every 30 seconds to keep data synchronized
+    _startAutoRefresh();
+  }
+
+  void _startAutoRefresh() {
+    Timer.periodic(Duration(seconds: 30), (timer) {
+      if (mounted) {
+        fetchUsers();
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   Future<void> fetchUsers() async {
-    final response = await http.get(
-      Uri.parse("http://192.168.100.238/flutter_api/get_users.php"),
-    );
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
 
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body);
-      if (jsonData['status'] == 'success') {
-        setState(() {
-          users = jsonData['data'];
-        });
+    try {
+      // Connect to your local database
+      final response = await http.get(
+        Uri.parse("http://localhost/flutter_api/get_users.php"),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        if (jsonData['status'] == 'success') {
+          setState(() {
+            users = jsonData['data'] ?? [];
+            isLoading = false;
+          });
+          print('Successfully loaded ${users.length} users from database');
+        } else {
+          throw Exception(jsonData['message'] ?? 'Failed to load users');
+        }
+      } else {
+        throw Exception('Server returned status code: ${response.statusCode}');
       }
+    } catch (e) {
+      print('Error fetching users: $e');
+      setState(() {
+        errorMessage = 'Failed to connect to database: ${e.toString()}';
+        isLoading = false;
+        users = []; // Empty list if database connection fails
+      });
     }
   }
 
@@ -160,91 +202,155 @@ class _CreateUserPageState extends State<CreateUserPage> {
     final passwordController = TextEditingController(text: user?['password']);
     final roleidController = TextEditingController(text: user?['roleid']?.toString() ?? '2');
 
+    bool isSubmitting = false;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(user == null ? "Create User" : "Edit User"),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              children: [
-                _textField("First Name", firstnameController),
-                _textField("Last Name", lastnameController),
-                _textField("Middle Initial", miController),
-                _textField("Address", addressController),
-                _textField("Email", emailController),
-                _textField("Contact", contactController),
-                _textField("Password", passwordController, obscureText: true),
-                _textField("Role ID", roleidController),
-              ],
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(user == null ? "Create User" : "Edit User"),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                children: [
+                  _textField("First Name", firstnameController),
+                  _textField("Last Name", lastnameController),
+                  _textField("Middle Initial", miController),
+                  _textField("Address", addressController),
+                  _textField("Email", emailController),
+                  _textField("Contact", contactController),
+                  _textField("Password", passwordController, obscureText: true),
+                  _textField("Role ID", roleidController),
+                ],
+              ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(context), 
+              child: Text("Cancel")
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting ? null : () async {
+                if (!formKey.currentState!.validate()) return;
+
+                setState(() {
+                  isSubmitting = true;
+                });
+
+                try {
+                  final Map<String, String> body = {
+                    "firstname": firstnameController.text,
+                    "lastname": lastnameController.text,
+                    "mi": miController.text,
+                    "address": addressController.text,
+                    "email": emailController.text,
+                    "contact": contactController.text,
+                    "password": passwordController.text,
+                    "roleid": roleidController.text,
+                  };
+
+                  String url;
+                  if (user == null) {
+                    url = "http://localhost/flutter_api/create_user.php";
+                  } else {
+                    url = "http://localhost/flutter_api/edit_user.php";
+                    body["id"] = user['id'].toString();
+                  }
+
+                  final response = await http.post(
+                    Uri.parse(url),
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                    },
+                    body: json.encode(body),
+                  ).timeout(const Duration(seconds: 10));
+
+                  final jsonResponse = json.decode(response.body);
+
+                  if (jsonResponse['status'] == 'success') {
+                    Navigator.pop(context);
+                    fetchUsers();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(user == null ? 'User created successfully!' : 'User updated successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(jsonResponse['message'] ?? 'Operation failed'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Network error: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                } finally {
+                  setState(() {
+                    isSubmitting = false;
+                  });
+                }
+              },
+              child: isSubmitting 
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(user == null ? "Create" : "Update"),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-
-              final Map<String, String> body = {
-                "firstname": firstnameController.text,
-                "lastname": lastnameController.text,
-                "mi": miController.text,
-                "address": addressController.text,
-                "email": emailController.text,
-                "contact": contactController.text,
-                "password": passwordController.text,
-                "roleid": roleidController.text,
-              };
-
-              String url;
-              if (user == null) {
-                url = "http://192.168.100.238/flutter_api/create_user.php";
-              } else {
-                url = "http://192.168.100.238/flutter_api/edit_user.php";
-                body["id"] = user['id'].toString();
-              }
-
-              final response = await http.post(
-                Uri.parse(url),
-                headers: {'Content-Type': 'application/json'},
-                body: json.encode(body),
-              );
-
-              final jsonResponse = json.decode(response.body);
-
-              if (jsonResponse['status'] == 'success') {
-                Navigator.pop(context);
-                fetchUsers();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(jsonResponse['message'])),
-                );
-              }
-            },
-            child: Text(user == null ? "Create" : "Update"),
-          ),
-        ],
       ),
     );
   }
 
   Future<void> deleteUser(String id) async {
-    final response = await http.post(
-      Uri.parse("http://192.168.100.238/flutter_api/delete_user.php"),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({"id": id}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse("http://localhost/flutter_api/delete_user.php"),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({"id": id}),
+      ).timeout(const Duration(seconds: 10));
 
-    final jsonResponse = json.decode(response.body);
+      final jsonResponse = json.decode(response.body);
 
-    if (jsonResponse['status'] == 'success') {
-      fetchUsers();
-    } else {
+      if (jsonResponse['status'] == 'success') {
+        fetchUsers();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('User deleted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(jsonResponse['message'] ?? 'Delete failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(jsonResponse['message'])),
+        SnackBar(
+          content: Text('Connection failed. Please check your network and try again.'),
+          backgroundColor: Colors.red,
+        ),
       );
+      print('deleteUser error: $e');
     }
   }
 
@@ -264,11 +370,34 @@ class _CreateUserPageState extends State<CreateUserPage> {
   }
 
   Widget _userCard(Map<String, dynamic> user) {
+    // Get role name based on roleid
+    String getRoleName(String roleId) {
+      switch (roleId) {
+        case '1': return 'Admin';
+        case '2': return 'User';
+        case '3': return 'Staff';
+        default: return 'Unknown';
+      }
+    }
+
+    // Get verification status
+    String getVerificationStatus(String verified) {
+      return verified == '1' ? 'Verified' : 'Not Verified';
+    }
+
     return Card(
       margin: EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
         title: Text("${user['firstname']} ${user['lastname']}"),
-        subtitle: Text("Email: ${user['email']}"),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Email: ${user['email']}"),
+            Text("Contact: ${user['contact']}"),
+            Text("Role: ${getRoleName(user['roleid'])} | ${getVerificationStatus(user['verified'])}"),
+            Text("ID: ${user['id']}", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          ],
+        ),
         trailing: Wrap(
           spacing: 8,
           children: [
@@ -309,7 +438,16 @@ class _CreateUserPageState extends State<CreateUserPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("User Management")),
+      appBar: AppBar(
+        title: Text("User Management"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: fetchUsers,
+            tooltip: 'Refresh Users',
+          ),
+        ],
+      ),
       body: Column( // Use a Column to stack the carousel and the user list
         children: [
           Expanded( // Give the carousel a flexible space
@@ -318,9 +456,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
           ),
           Expanded( // Give the user list a flexible space
             flex: 3, // Adjust this flex value to control list height relative to the carousel
-            child: users.isEmpty
-                ? Center(child: CircularProgressIndicator())
-                : ListView(children: users.map((u) => _userCard(u)).toList()),
+            child: _buildUserList(),
           ),
         ],
       ),
@@ -329,6 +465,95 @@ class _CreateUserPageState extends State<CreateUserPage> {
         tooltip: "Create User",
         child: Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildUserList() {
+    if (isLoading) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading users...'),
+          ],
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, size: 64, color: Colors.orange),
+            SizedBox(height: 16),
+            Text(
+              errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.orange),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: fetchUsers,
+              child: Text('Try Server Connection'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (users.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_outline, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No users found',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => createOrUpdateUser(),
+              child: Text('Create First User'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        // Add a banner to show database connection status
+        if (users.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(8),
+            color: Colors.green.withOpacity(0.1),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.cloud_done, size: 16, color: Colors.green),
+                SizedBox(width: 8),
+                Text(
+                  'Live Database - ${users.length} users loaded',
+                  style: TextStyle(color: Colors.green, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: fetchUsers,
+            child: ListView(
+              children: users.map((u) => _userCard(u)).toList(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

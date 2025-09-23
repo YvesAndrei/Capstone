@@ -1,7 +1,9 @@
 class ApiConfig {
-  // 🔄 Change this whenever LocalTunnel link updates
-  static const String baseUrl = "https://eager-foxes-smile.loca.lt/flutter_api/";
-  static const String websocketUrl = "ws://192.168.100.238";
+  // 🔹 Point to your Hostinger domain
+  static const String baseUrl = "https://mendezresortandeventsplace.site/api/";
+
+  // (Optional) WebSocket URL — update if you plan to run a WebSocket server
+  static const String websocketUrl = "ws://mendezresortandeventsplace.site:8080";
 
   // -------------------------
   // Authentication & Users
@@ -33,13 +35,12 @@ class ApiConfig {
   // Payments
   // -------------------------
   static const String createPayment = "${baseUrl}create_payment.php";
-  static const String mockPayment = "${baseUrl}mock_payment.php"; // optional
+  static const String mockPayment = "${baseUrl}mock_payment.php";
   static const String paymongoWebhook = "${baseUrl}paymongo_webhook.php";
   static const String refundPaymentUrl = "${baseUrl}refund_payment.php";
   static const String requestRefund = "${baseUrl}request_refund.php";
-static const String adminRefund = "${baseUrl}admin_refund.php"; // or refund_payment.php if you keep that name
-static const String hasRefundRequest = "${baseUrl}has_refund_request.php";
-
+  static const String adminRefund = "${baseUrl}admin_refund.php";
+  static const String hasRefundRequest = "${baseUrl}has_refund_request.php";
 
   // -------------------------
   // Packages & Amenities

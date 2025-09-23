@@ -1,37 +1,141 @@
-// ... all your existing imports
+/// Main entry point for the Mendez Resort and Events Place Flutter application.
+///
+/// This file contains the root widget (MyApp) and the home page (ResortHomePage)
+/// which provides a tabbed interface for browsing packages, catering services,
+/// reservation calendar, and amenities. It also handles user login functionality.
+
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'page2.dart';
-import 'CreateAccount.dart';
-import 'Admin.dart';
-import 'User.dart';
-import 'Staff.dart';
-import 'package:flutter_application_1/globals.dart' as globals;
-import 'rooms_360_view.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'payment_success.dart';
+import 'payment_failed.dart';
 import '../config/api.dart';
+import 'Admin.dart';
+import 'CreateAccount.dart';
+import 'Staff.dart';
+import 'User.dart';
+import 'globals.dart' as globals;
+import 'page2.dart';
+import 'rooms_360_view.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 
+// Constants for hardcoded data
+const List<Map<String, String>> cateringOffers = [
+  {
+    'title': 'Wedding',
+    'description': 'A wedding pictorial typically involves capturing a variety of photos...',
+    'imagePath': 'assets/wedding.jpg',
+  },
+  {
+    'title': 'Birthday',
+    'description': 'A birthday is the anniversary of the day someone was born...',
+    'imagePath': 'assets/birthday.jpg',
+  },
+  {
+    'title': 'Reunions',
+    'description': 'A reunion is a gathering of people who haven\'t seen each other for a long time...',
+    'imagePath': 'assets/reunion.jpg',
+  },
+  {
+    'title': 'Christening',
+    'description': 'A christening is a religious ceremony...',
+    'imagePath': 'assets/christening.jpg',
+  },
+];
 
 void main() {
+  setUrlStrategy(const HashUrlStrategy());
   runApp(MyApp());
 }
 
+/// Root widget of the application.
+///
+/// This widget sets up the MaterialApp with the home page being ResortHomePage.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mendez Resort',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: ResortHomePage(),
+  return MaterialApp(
+  title: 'Mendez Resort and Eventsplace',
+  theme: ThemeData(
+    useMaterial3: true,
+    primaryColor: Colors.teal,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.teal,
+      secondary: Colors.blueAccent,
+      surface: Colors.white,
+      onSurface: Colors.black,
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.teal,
+      foregroundColor: Colors.white,
+      elevation: 4,
+      shadowColor: Colors.teal.withOpacity(0.3),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+        elevation: 3,
+        shadowColor: Colors.teal.withOpacity(0.3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    ),
+    cardTheme: CardThemeData(
+      elevation: 4,
+      shadowColor: Colors.teal.withOpacity(0.2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    textTheme: TextTheme(
+      headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.teal[800]),
+      headlineMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal[700]),
+      bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
+    ),
+  ),
+  initialRoute: '/',
+  routes: {
+    '/': (context) => const ResortHomePage(),
+    '/user-dashboard': (context) => const User(),
+  },
+  onGenerateRoute: (settings) {
+    final uri = Uri.parse(settings.name ?? '');
+
+    if (uri.path == '/payment-success') {
+      return MaterialPageRoute(
+        builder: (_) => const PaymentSuccessPage(),
+        settings: settings,
+      );
+    }
+    if (uri.path == '/payment-failed') {
+      return MaterialPageRoute(
+        builder: (_) => const PaymentFailedPage(),
+        settings: settings,
+      );
+    }
+
+    return MaterialPageRoute(
+      builder: (_) => const ResortHomePage(),
     );
+  },
+);
+
   }
 }
 
+
+/// Home page widget for the Mendez Resort application.
+///
+/// Displays a tabbed interface with packages, catering, calendar, and amenities.
+/// Includes login functionality and a carousel of images.
 class ResortHomePage extends StatefulWidget {
   const ResortHomePage({super.key});
 
@@ -48,7 +152,8 @@ class _ResortHomePageState extends State<ResortHomePage> {
   Future<void> _login(BuildContext context) async {
   final String email = _usernameController.text;
   final String password = _passwordController.text;
-  final String url = 'http://192.168.100.238/flutter_api/login.php';
+  final String url = ApiConfig.login;
+
 
   try {
     final response = await http.post(
@@ -180,7 +285,13 @@ class _ResortHomePageState extends State<ResortHomePage> {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Mendez Resort and Events Place'),
+          title: Row(
+            children: [
+              Image.asset('assets/Mendez.jpg', height: 40, width: 40),
+              const SizedBox(width: 10),
+              const Text('Mendez Resort and Events Place'),
+            ],
+          ),
           actions: [
             ElevatedButton(
               onPressed: () => _showLoginDialog(context),
@@ -251,33 +362,11 @@ class _ResortHomePageState extends State<ResortHomePage> {
     return ReservationCalendar();
   }
 
+  /// Builds the catering tab with a grid of catering offers.
   Widget _buildCateringTab(double screenWidth) {
-    final catering = [
-      {
-        'title': 'Wedding',
-        'description': 'A wedding pictorial typically involves capturing a variety of photos...',
-        'imagePath': 'assets/wedding.jpg',
-      },
-      {
-        'title': 'Birthday',
-        'description': 'A birthday is the anniversary of the day someone was born...',
-        'imagePath': 'assets/birthday.jpg',
-      },
-      {
-        'title': 'Reunions',
-        'description': 'A reunion is a gathering of people who haven\'t seen each other for a long time...',
-        'imagePath': 'assets/reunion.jpg',
-      },
-      {
-        'title': 'Christening',
-        'description': 'A christening is a religious ceremony...',
-        'imagePath': 'assets/christening.jpg',
-      },
-    ];
-
     return GridView.builder(
-      itemCount: catering.length,
-      padding: EdgeInsets.all(16),
+      itemCount: cateringOffers.length,
+      padding: const EdgeInsets.all(16),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: screenWidth < 600 ? 250 : 400,
         mainAxisSpacing: 10,
@@ -285,7 +374,7 @@ class _ResortHomePageState extends State<ResortHomePage> {
         childAspectRatio: 0.8,
       ),
       itemBuilder: (context, index) {
-        final item = catering[index];
+        final item = cateringOffers[index];
         return OfferCard(
           title: item['title']!,
           description: item['description']!,
@@ -322,12 +411,16 @@ class _ResortHomePageState extends State<ResortHomePage> {
   }
 }
 
+/// A card widget to display an offer with an image, title, and description.
+///
+/// Used in the catering tab to showcase different catering services.
 class OfferCard extends StatelessWidget {
   final String title;
   final String description;
   final String imagePath;
 
-  const OfferCard({super.key, 
+  const OfferCard({
+    super.key,
     required this.title,
     required this.description,
     required this.imagePath,
@@ -365,6 +458,9 @@ class OfferCard extends StatelessWidget {
   }
 }
 
+/// Tab widget for displaying available packages.
+///
+/// Fetches packages from the API and displays them in a grid layout.
 class PackagesTab extends StatefulWidget {
   const PackagesTab({super.key});
 
@@ -383,12 +479,15 @@ class _PackagesTabState extends State<PackagesTab> {
   }
 
   Future<void> fetchPackages() async {
-    final url = Uri.parse('http://192.168.100.238/flutter_api/get_packages.php');
+    final url = Uri.parse(ApiConfig.getPackages);
+
     try {
       final response = await http.get(url);
+      print('DEBUG: API response body: ${response.body}'); // Debug print
       final data = json.decode(response.body);
 
-      if (data['status'] == 'success') {
+      if (data['success'] == true) {
+        print('DEBUG: Number of packages received: ${data['data'].length}'); // Debug print
         setState(() {
           packages = data['data'];
           isLoading = false;
@@ -406,7 +505,7 @@ class _PackagesTabState extends State<PackagesTab> {
 
   Widget _bootstrapStyleCard(Map<String, dynamic> pkg) {
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: 400),
+      constraints: BoxConstraints(maxWidth: 400, maxHeight: 500),
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         elevation: 5,
@@ -427,12 +526,21 @@ class _PackagesTabState extends State<PackagesTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(pkg['package_name'], style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 8),
-                  Text('${pkg['day_type']} - ${pkg['week_schedule']}', style: TextStyle(color: Colors.grey[700])),
-                  SizedBox(height: 4),
-                  Text('Hours: ${pkg['hours']}'),
-                  Text('Price: ₱${pkg['price']}'),
+                  Text(pkg['name'] ?? 'Unnamed Package',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
+                  Text(
+                    pkg['amenities'] != null && pkg['amenities'].toString().trim().isNotEmpty
+                      ? "Inclusions:\n" +
+                        pkg['amenities']
+                          .toString()
+                         .split('\n')
+                        .map((a) => "- $a")
+                       .join("\n")
+      : "No inclusions available",
+  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+),
+                  
                 ],
               ),
             ),

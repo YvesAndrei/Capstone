@@ -18,6 +18,11 @@ class _ManageReservationsPageState extends State<ManageReservationsPage> {
   bool hasMore = true;
   final ScrollController _scrollController = ScrollController();
 
+  List<Map<String, dynamic>> users = [];
+  List<Map<String, dynamic>> packages = [];
+  bool isLoadingUsers = false;
+  bool isLoadingPackages = false;
+
   @override
   void initState() {
     super.initState();
@@ -278,6 +283,266 @@ class _ManageReservationsPageState extends State<ManageReservationsPage> {
     await fetchReservations();
   }
 
+  Future<void> fetchUsers() async {
+    if (isLoadingUsers) return;
+    setState(() => isLoadingUsers = true);
+
+    try {
+      final response = await http.get(Uri.parse(ApiConfig.getUsers));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            users = List<Map<String, dynamic>>.from(data['data'] ?? []);
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching users: $e");
+    }
+
+    setState(() => isLoadingUsers = false);
+  }
+
+  Future<void> fetchPackages() async {
+    if (isLoadingPackages) return;
+    setState(() => isLoadingPackages = true);
+
+    try {
+      final response = await http.get(Uri.parse("${ApiConfig.getPackages}?simple=1"));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            packages = List<Map<String, dynamic>>.from(data['data'] ?? []);
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching packages: $e");
+    }
+
+    setState(() => isLoadingPackages = false);
+  }
+
+  Future<void> createReservation(Map<String, dynamic> reservationData) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.createReservation),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: jsonEncode(reservationData),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Reservation created successfully!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await refreshData(); // Refresh the list
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Failed to create reservation: ${data['error'] ?? 'Unknown error'}"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("HTTP error: ${response.statusCode}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error creating reservation: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Error creating reservation"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void showAddReservationDialog(BuildContext context) {
+    // Fetch users and packages if not already loaded
+    if (users.isEmpty) fetchUsers();
+    if (packages.isEmpty) fetchPackages();
+
+    int? selectedUserId;
+    int? selectedPackageId;
+    String? selectedReservationType;
+    String? selectedWeekSchedule;
+    DateTime? selectedDate;
+    int guestCount = 1;
+    int hours = 5; // Default for events
+
+    final reservationTypes = ['Day Tour', 'Overnight', 'Whole Day', 'Events'];
+    final weekSchedules = ['Weekday', 'Weekend'];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Add New Reservation'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // User Dropdown
+                    DropdownButtonFormField<int>(
+                      decoration: const InputDecoration(labelText: 'User'),
+                      value: selectedUserId,
+                      items: users.map((user) {
+                        return DropdownMenuItem<int>(
+                          value: user['id'],
+                          child: Text(user['name'] ?? 'User ${user['id']}'),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => selectedUserId = value),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Package Dropdown
+                    DropdownButtonFormField<int>(
+                      decoration: const InputDecoration(labelText: 'Package'),
+                      value: selectedPackageId,
+                      items: packages.map((package) {
+                        return DropdownMenuItem<int>(
+                          value: package['id'],
+                          child: Text(package['name'] ?? 'Package ${package['id']}'),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => selectedPackageId = value),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Reservation Type Dropdown
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Reservation Type'),
+                      value: selectedReservationType,
+                      items: reservationTypes.map((type) {
+                        return DropdownMenuItem<String>(
+                          value: type,
+                          child: Text(type),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => selectedReservationType = value),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Week Schedule Dropdown
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Week Schedule'),
+                      value: selectedWeekSchedule,
+                      items: weekSchedules.map((schedule) {
+                        return DropdownMenuItem<String>(
+                          value: schedule,
+                          child: Text(schedule),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => selectedWeekSchedule = value),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Date Picker
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (picked != null) {
+                          setState(() => selectedDate = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(labelText: 'Date'),
+                        child: Text(
+                          selectedDate != null
+                              ? "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}"
+                              : 'Select Date',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Guest Count
+                    TextFormField(
+                      decoration: const InputDecoration(labelText: 'Guest Count'),
+                      keyboardType: TextInputType.number,
+                      initialValue: guestCount.toString(),
+                      onChanged: (value) => guestCount = int.tryParse(value) ?? 1,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Hours (only for Events)
+                    if (selectedReservationType == 'Events')
+                      TextFormField(
+                        decoration: const InputDecoration(labelText: 'Hours (for Events)'),
+                        keyboardType: TextInputType.number,
+                        initialValue: hours.toString(),
+                        onChanged: (value) => hours = int.tryParse(value) ?? 5,
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (selectedUserId == null ||
+                        selectedPackageId == null ||
+                        selectedReservationType == null ||
+                        selectedWeekSchedule == null ||
+                        selectedDate == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please fill all required fields'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final reservationData = {
+                      'user_id': selectedUserId,
+                      'package_id': selectedPackageId,
+                      'reservation_type': selectedReservationType,
+                      'week_schedule': selectedWeekSchedule,
+                      'date': "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}",
+                      'guest_count': guestCount,
+                      if (selectedReservationType == 'Events') 'hours': hours,
+                    };
+
+                    Navigator.of(context).pop();
+                    createReservation(reservationData);
+                  },
+                  child: const Text('Create'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -298,6 +563,11 @@ class _ManageReservationsPageState extends State<ManageReservationsPage> {
             }
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => showAddReservationDialog(context),
+        child: const Icon(Icons.add),
+        tooltip: 'Add Reservation',
       ),
     );
   }

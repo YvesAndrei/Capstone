@@ -11,7 +11,27 @@ class Staff extends StatelessWidget {
     final int currentUserId = globals.loggedInUserId ?? 0;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Staff Dashboard')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset('assets/Mendez.jpg', height: 40, width: 40),
+            const SizedBox(width: 10),
+            const Text('Staff Dashboard'),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Refresh',
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const Staff()),
+              );
+            },
+          ),
+        ],
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,

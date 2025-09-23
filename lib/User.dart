@@ -8,9 +8,18 @@ import 'package:url_launcher/url_launcher.dart';
 import 'user_reservations.dart'; // Import the new user reservations page
 import 'main.dart'; // Import main.dart for ResortHomePage
 import 'uploads_page.dart'; // Import uploads page for navigation
+import 'payment_webview.dart';
 import '../config/api.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher.dart';
 
+/// User dashboard widget.
+///
 
+/// - Messaging with admin
+/// - Viewing and editing profile
+/// - Uploading 360-degree views
+/// - Making and viewing reservations
 class User extends StatelessWidget {
   const User({super.key});
 
@@ -22,137 +31,171 @@ class User extends StatelessWidget {
     print("DEBUG: Current user ID from globals: $currentUserId");
 
     return Scaffold(
-      appBar: AppBar(title: const Text('User Dashboard')),
-
-      // --- Drawer for navigation ---
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+      appBar: AppBar(
+        title: Row(
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text(
-                'User Menu',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            // --- Messaging Drawer Tile ---
-            ListTile(
-              leading: const Icon(Icons.message),
-              title: const Text('Messages'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatPageUpdated(
-                      loggedInUserId: currentUserId,
-                      otherUserId: 1, // Use int directly
-                      otherUserName: 'Admin',
-                    ),
-                  ),
-                );
-              },
-            ),
-            // --- Profile Drawer Tile ---
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: () {
-                print("DEBUG: Navigating to ProfilePage with userId: $currentUserId");
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfilePage(
-                      userId: currentUserId ?? 0, // from globals
-                    ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.upload_file),
-              title: const Text('360 Viewing'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const UploadsPage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout'),
-              onTap: () {
-                Navigator.pop(context);
-                globals.clearLoginData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged out successfully')),
-                );
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ResortHomePage()),
-                  (route) => false,
-                );
-              },
-            ),
+            Image.asset('assets/Mendez.jpg', height: 40, width: 40),
+            const SizedBox(width: 10),
+            const Text('User Dashboard', style: TextStyle(color: Colors.white)),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Refresh',
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const User()),
+              );
+            },
+          ),
+          TextButton.icon(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            label: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onPressed: () {
+              globals.clearLoginData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Logged out successfully')),
+              );
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const ResortHomePage()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
       ),
 
+      // Drawer removed as per request
+
       // --- Main Body ---
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // DEBUG: Show current user ID on screen
-            Text(
-              'Current User ID: $currentUserId',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/Mendez.jpg',
+              fit: BoxFit.cover,
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              child: const Text('Make a Reservation'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ReservationForm(userId: currentUserId ?? 0), // from globals
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.6), // increased opacity for better visibility
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Visible menu items (replacing drawer) as horizontal row
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      SizedBox(
+                        width: 120,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.dashboard),
+                          label: const Text('Dashboard', style: TextStyle(color: Colors.white)),
+                          onPressed: () {
+                            // No navigation, just close menu equivalent
+                          },
+                        ),
+                      ),
+                      SizedBox(width: 24),
+                      TextButton.icon(
+                        icon: const Icon(Icons.bookmark),
+                        label: const Text('My Reservations', style: TextStyle(color: Colors.white)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => UserReservationsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: 24),
+                      TextButton.icon(
+                        icon: const Icon(Icons.message),
+                        label: const Text('Messages', style: TextStyle(color: Colors.white)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatPageUpdated(
+                                loggedInUserId: currentUserId,
+                                otherUserId: 1,
+                                otherUserName: 'Admin',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: 24),
+                      TextButton.icon(
+                        icon: const Icon(Icons.person),
+                        label: const Text('Profile', style: TextStyle(color: Colors.white)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProfilePage(
+                                userId: currentUserId ?? 0,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      SizedBox(width: 24),
+                      TextButton.icon(
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('360 Viewing', style: TextStyle(color: Colors.white)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const UploadsPage()),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                );
-              },
+                ),
+                // Logout button moved to upper right in app bar actions
+                const Divider(),
+                // Existing content below
+                Text(
+                  'Current User ID: $currentUserId',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  child: const Text('Make a Reservation', style: TextStyle(color: Colors.white)),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ReservationForm(userId: currentUserId ?? 0),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              child: const Text('My Reservations'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        UserReservationsPage(), // Navigate to new user reservations page
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ================== RESERVATION FORM ==================
+/// Reservation form widget for creating new reservations.
+///
+/// Allows users to select package type, day type, date, and number of guests.
+/// Integrates with PayMongo for payment processing.
 class ReservationForm extends StatefulWidget {
   final int userId;
 
@@ -313,18 +356,26 @@ void submitForm() async {
         print('DEBUG: PayMongo create_payment response: $payData');
 
         if (payData['success'] == true && payData['checkout_url'] != null) {
-          final checkoutUrl = Uri.parse(payData['checkout_url']);
-
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Redirecting to PayMongo checkout...')),
           );
 
-          // Step 3: Launch PayMongo checkout
-          if (await canLaunchUrl(checkoutUrl)) {
-            await launchUrl(checkoutUrl, mode: LaunchMode.externalApplication);
+          // Step 3: Launch PayMongo checkout depending on platform
+          if (kIsWeb) {
+            // On web, open in same tab (or new tab if you change _self to _blank)
+            await launchUrl(
+              Uri.parse(payData['checkout_url']),
+              mode: LaunchMode.platformDefault,
+              webOnlyWindowName: '_self', // '_self' same tab, '_blank' new tab
+            );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Could not launch payment link')),
+            // On mobile, show embedded WebView
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    PaymentWebView(checkoutUrl: payData['checkout_url']),
+              ),
             );
           }
 
@@ -360,17 +411,34 @@ void submitForm() async {
 }
 
 
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Reservation Form')),
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Image.asset('assets/Mendez.jpg', height: 40, width: 40),
+              const SizedBox(width: 10),
+              const Text('Reservation Form'),
+            ],
+          ),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reservation Form')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset('assets/Mendez.jpg', height: 40, width: 40),
+            const SizedBox(width: 10),
+            const Text('Reservation Form'),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
