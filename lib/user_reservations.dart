@@ -50,7 +50,7 @@ class _UserReservationsPageState extends State<UserReservationsPage> {
       }
 
       String url =
-          "http://192.168.100.238/flutter_api/get_user_reservations.php?user_id=$userId&page=$currentPage&limit=$limit";
+          "${ApiConfig.baseUrl}get_user_reservations.php?user_id=$userId&page=$currentPage&limit=$limit";
       if (statusFilter != null && statusFilter != 'all') {
         url += "&status=$statusFilter";
       }

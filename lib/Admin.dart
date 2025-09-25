@@ -9,6 +9,8 @@ import 'main.dart';
 import 'package:flutter_application_1/globals.dart' as globals;
 import 'uploads_page.dart';
 import 'transaction_page.dart';
+import 'user_approvals.dart';
+import 'reservation_calendar.dart' as rc;
 
 /// Admin dashboard widget for managing resort operations.
 class Admin extends StatefulWidget {
@@ -39,6 +41,8 @@ class _AdminState extends State<Admin> {
         return _buildMessageContent();
       case 'createuser':
         return CreateUserPage();
+      case 'userapprovals':
+        return UserApprovalsPage();
       case 'manageres':
         return ManageReservationsPage();
       default:
@@ -46,13 +50,13 @@ class _AdminState extends State<Admin> {
     }
   }
 
-  Widget _buildDashboardContent() {
+    Widget _buildDashboardContent() {
     return Container(
       padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Green SizedBox container with bigger white text
+          // Green header container
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(30),
@@ -82,15 +86,30 @@ class _AdminState extends State<Admin> {
               ],
             ),
           ),
+
           SizedBox(height: 30),
           Text(
             'Select an option from the sidebar to manage your resort operations.',
             style: TextStyle(fontSize: 18, color: Colors.white70),
           ),
+          SizedBox(height: 30),
+
+          // 👇 Add the calendar here
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white, // background for calendar
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: rc.ReservationCalendar(),
+            ),
+          ),
         ],
       ),
     );
   }
+
 
   Widget _buildSettingsContent() {
     return Container(
@@ -254,6 +273,7 @@ class _AdminState extends State<Admin> {
                     SizedBox(height: 20),
                     _buildMenuItem('Messages', 'message'),
                     _buildMenuItem('Create Users', 'createuser'),
+                    _buildMenuItem('User Approvals', 'userapprovals'),
                     _buildMenuItem('Manage Reservations', 'manageres'),
                   ],
                 ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config/api.dart'; // added
 import 'package:panorama/panorama.dart';
 import 'panorama_viewer.dart';
 import 'package:flutter_application_1/globals.dart' as globals;
@@ -49,7 +50,7 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
   Future<void> _fetchRooms() async {
     setState(() => _isLoadingRooms = true);
     try {
-      final response = await http.get(Uri.parse("http://192.168.100.238/flutter_api/get_rooms.php"));
+      final response = await http.get(Uri.parse("${ApiConfig.baseUrl}get_rooms.php"));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data["success"] == true) {
@@ -68,7 +69,7 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
   Future<void> _fetchPools() async {
     setState(() => _isLoadingPools = true);
     try {
-      final response = await http.get(Uri.parse("http://192.168.100.238/flutter_api/get_pools.php"));
+      final response = await http.get(Uri.parse("${ApiConfig.baseUrl}get_pools.php"));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data["success"] == true) {
@@ -135,7 +136,9 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
   Future<void> _uploadItem({required String tableName, required String nameField, required String nameValue}) async {
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse(tableName == "room" ? "http://192.168.100.238/flutter_api/upload_room.php" : "http://192.168.100.238/flutter_api/upload_pool.php"),
+      Uri.parse(tableName == "room"
+          ? "${ApiConfig.baseUrl}upload_room.php"
+          : "${ApiConfig.baseUrl}upload_pool.php"),
     );
     request.fields[nameField] = nameValue;
 
@@ -188,14 +191,22 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
                   if (_pickedImage != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: kIsWeb ? FutureBuilder<Uint8List>(future: _pickedImage!.readAsBytes(), builder: (context, snapshot) => snapshot.hasData ? Image.memory(snapshot.data!, height: 100) : const SizedBox()) : Image.file(_imageFile!, height: 100),
+                      child: kIsWeb
+                          ? FutureBuilder<Uint8List>(
+                              future: _pickedImage!.readAsBytes(),
+                              builder: (context, snapshot) => snapshot.hasData ? Image.memory(snapshot.data!, height: 100) : const SizedBox())
+                          : Image.file(_imageFile!, height: 100),
                     ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(icon: const Icon(Icons.threesixty), label: const Text("Pick 360° Image"), onPressed: () => _pickImage(true)),
                   if (_pickedImage360 != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: kIsWeb ? FutureBuilder<Uint8List>(future: _pickedImage360!.readAsBytes(), builder: (context, snapshot) => snapshot.hasData ? Image.memory(snapshot.data!, height: 100) : const SizedBox()) : Image.file(_image360File!, height: 100),
+                      child: kIsWeb
+                          ? FutureBuilder<Uint8List>(
+                              future: _pickedImage360!.readAsBytes(),
+                              builder: (context, snapshot) => snapshot.hasData ? Image.memory(snapshot.data!, height: 100) : const SizedBox())
+                          : Image.file(_image360File!, height: 100),
                     ),
                 ],
               ),
@@ -237,10 +248,12 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
             _buildPoolsTab(),
           ],
         ),
-        floatingActionButton: isAdmin ? FloatingActionButton(
-          onPressed: () => _openAddDialog(_tabController.index == 0 ? 'room' : 'pool'),
-          child: const Icon(Icons.add),
-        ) : null,
+        floatingActionButton: isAdmin
+            ? FloatingActionButton(
+                onPressed: () => _openAddDialog(_tabController.index == 0 ? 'room' : 'pool'),
+                child: const Icon(Icons.add),
+              )
+            : null,
       ),
     );
   }
@@ -257,13 +270,13 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
           margin: const EdgeInsets.all(8),
           child: ListTile(
             leading: room["imagefilepath"] != null
-                ? Image.network("http://192.168.100.238/flutter_api/${room["imagefilepath"]}", width: 50, height: 50, fit: BoxFit.cover)
+                ? Image.network("${ApiConfig.baseUrl}${room["imagefilepath"]}", width: 50, height: 50, fit: BoxFit.cover)
                 : const Icon(Icons.image),
             title: Text(room["roomname"] ?? "No name"),
             subtitle: Row(
               children: [
                 TextButton(
-                  onPressed: () => _showImageDialog("http://192.168.100.238/flutter_api/${room["imagefilepath"]}"),
+                  onPressed: () => _showImageDialog("${ApiConfig.baseUrl}${room["imagefilepath"]}"),
                   child: const Text("View"),
                 ),
                 const SizedBox(width: 8),
@@ -271,36 +284,37 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => PanoramaViewer(imageUrl: "http://192.168.100.238/flutter_api/${room["image360filepath"]}")),
+                      MaterialPageRoute(builder: (_) => PanoramaViewer(imageUrl: "${ApiConfig.baseUrl}${room["image360filepath"]}")),
                     );
                   },
                   child: const Text("View 360°"),
                 ),
                 const SizedBox(width: 8),
-                if (isAdmin) IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text("Confirm Delete"),
-                        content: const Text("Are you sure you want to delete this room?"),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete")),
-                        ],
-                      ),
-                    );
-                    if (confirm == true) {
-                      final intId = int.tryParse(room["id"].toString()) ?? 0;
-                      if (intId > 0) {
-                        await _deleteRoom(intId);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid room id")));
+                if (isAdmin)
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Confirm Delete"),
+                          content: const Text("Are you sure you want to delete this room?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete")),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        final intId = int.tryParse(room["id"].toString()) ?? 0;
+                        if (intId > 0) {
+                          await _deleteRoom(intId);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid room id")));
+                        }
                       }
-                    }
-                  },
-                ),
+                    },
+                  ),
               ],
             ),
           ),
@@ -316,7 +330,7 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
     setState(() {
       _isDeleting = true;
     });
-    final url = Uri.parse("http://192.168.100.238/flutter_api/delete_room.php");
+    final url = Uri.parse("${ApiConfig.baseUrl}delete_room.php");
     try {
       print("Sending delete request for room id: $id");
       final response = await http.post(
@@ -360,13 +374,13 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
           margin: const EdgeInsets.all(8),
           child: ListTile(
             leading: pool["imagefilepath"] != null
-                ? Image.network("http://192.168.100.238/flutter_api/${pool["imagefilepath"]}", width: 50, height: 50, fit: BoxFit.cover)
+                ? Image.network("${ApiConfig.baseUrl}${pool["imagefilepath"]}", width: 50, height: 50, fit: BoxFit.cover)
                 : const Icon(Icons.image),
             title: Text(pool["poolname"] ?? "No name"),
             subtitle: Row(
               children: [
                 TextButton(
-                  onPressed: () => _showImageDialog("http://192.168.100.238/flutter_api/${pool["imagefilepath"]}"),
+                  onPressed: () => _showImageDialog("${ApiConfig.baseUrl}${pool["imagefilepath"]}"),
                   child: const Text("View"),
                 ),
                 const SizedBox(width: 8),
@@ -374,7 +388,7 @@ class _UploadsPageState extends State<UploadsPage> with SingleTickerProviderStat
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => PanoramaViewer(imageUrl: "http://192.168.100.238/flutter_api/${pool["image360filepath"]}")),
+                      MaterialPageRoute(builder: (_) => PanoramaViewer(imageUrl: "${ApiConfig.baseUrl}${pool["image360filepath"]}")),
                     );
                   },
                   child: const Text("View 360°"),

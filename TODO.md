@@ -1,9 +1,3 @@
-- [ ] Update appBar title in User widget to white font color
-- [ ] Update appBar title in ReservationForm to white font color
-- [ ] Update 'Current User ID' text in User body to white
-- [ ] Update 'Make a Reservation' button text to white
-- [ ] Update horizontal menu TextButton labels to white
-- [ ] Update 'Making reservation for User ID' text in ReservationForm to white
-- [ ] Update dropdown child texts in ReservationForm to white
-- [ ] Update date picker text in ReservationForm to white
-- [ ] Update 'Submit Reservation' button text to white
+- [ ] Modify lib/chatpage_updated.dart to call send_message.php when sending a message to persist it in the database.
+- [ ] Test the chat functionality between User and Admin to ensure messages are visible and persistent.
+- [ ] Ensure websocket server is running for realtime updates.

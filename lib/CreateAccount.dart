@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
+import 'config/api.dart';
 class CreateAccount extends StatefulWidget {
   const CreateAccount({super.key});
 
@@ -18,7 +18,8 @@ class _CreateAccountState extends State<CreateAccount> {
   String? customerPassword;
 
   Future<void> registerUser() async {
-    var url = Uri.parse("http://localhost/flutter_api/register.php");
+var url = Uri.parse("${ApiConfig.baseUrl}register.php");
+
 
     try {
       var response = await http
@@ -35,9 +36,15 @@ class _CreateAccountState extends State<CreateAccount> {
 
       print("Server response: ${response.body}");
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Server: ${response.body}")),
-      );
+      if (response.body == "Success") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Account created successfully! Your account is pending approval by an admin.")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Server: ${response.body}")),
+        );
+      }
     } catch (e) {
       print("Request failed: $e");
 

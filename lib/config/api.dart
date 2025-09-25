@@ -17,6 +17,10 @@ class ApiConfig {
   static const String deleteUser = "${baseUrl}delete_user.php";
   static const String editUser = "${baseUrl}edit_user.php";
   static const String createUser = "${baseUrl}create_user.php";
+  static const String getPendingUsers = "${baseUrl}get_pending_users.php";
+  static const String approveUser = "${baseUrl}approve_user.php";
+  static const String rejectUser  = "${baseUrl}reject_user.php";
+
 
   // -------------------------
   // Reservations

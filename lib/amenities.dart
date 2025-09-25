@@ -121,8 +121,8 @@ class _AmenitiesPageState extends State<amenities> {
             };
 
             String url = amenity == null
-                ? "http://192.168.100.238/flutter_api/add_amenities.php"
-                : "http://192.168.100.238/flutter_api/edit_amenities.php";
+                ? ApiConfig.addAmenities
+                : ApiConfig.editAmenities;
 
             if (amenity != null) {
               body["amenity_id"] = amenity['amenity_id'].toString();

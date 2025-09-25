@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/api.dart';
 
 class PackagesPage extends StatefulWidget {
   const PackagesPage({super.key});
@@ -20,7 +21,7 @@ class _PackagesPageState extends State<PackagesPage> {
 
   Future<void> fetchPackages() async {
     final response = await http.get(
-      Uri.parse("http://192.168.100.238/flutter_api/get_packages.php"),
+      Uri.parse(ApiConfig.getPackages),
     );
 
     if (response.statusCode == 200) {
@@ -35,7 +36,7 @@ class _PackagesPageState extends State<PackagesPage> {
 
   Future<void> _deletePackage(String id) async {
     final response = await http.post(
-      Uri.parse("http://192.168.100.238/flutter_api/delete_package.php"),
+      Uri.parse(ApiConfig.deletePackage),
       body: {"id": id},
     );
 
@@ -110,8 +111,9 @@ class _PackagesPageState extends State<PackagesPage> {
                 };
 
                 String url = pkg == null
-                    ? "http://192.168.100.238/flutter_api/add_package.php"
-                    : "http://192.168.100.238/flutter_api/edit_package.php";
+                    ? ApiConfig.addPackage
+                    : ApiConfig.editPackage;
+
 
                 if (pkg != null) {
                   body["id"] = pkg['id'].toString();

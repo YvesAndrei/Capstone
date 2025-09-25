@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'realtime_chat_container.dart';
-import 'config/api.dart'; // Make sure ApiConfig.websocketUrl is here
+import 'config/api.dart';
+import 'realtime_chat_container.dart';   // <- NEW Messenger style container
 
 class ChatPageUpdated extends StatefulWidget {
   final int loggedInUserId;
@@ -17,7 +18,7 @@ class ChatPageUpdated extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _ChatPageUpdatedState createState() => _ChatPageUpdatedState();
+  State<ChatPageUpdated> createState() => _ChatPageUpdatedState();
 }
 
 class _ChatPageUpdatedState extends State<ChatPageUpdated> {
@@ -25,28 +26,62 @@ class _ChatPageUpdatedState extends State<ChatPageUpdated> {
   List<Map<String, dynamic>> messages = [];
   bool isTyping = false;
 
+  final TextEditingController textController = TextEditingController();
+  final ScrollController scrollController = ScrollController();
+
+  void addMessage(Map<String, dynamic> msg) {
+    setState(() {
+      messages.add(msg);
+    });
+    // auto scroll to bottom
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (scrollController.hasClients) {
+        scrollController.jumpTo(
+          scrollController.position.maxScrollExtent,
+        );
+      }
+    });
+  }
+
+  Future<void> fetchMessages() async {
+    final url = Uri.parse(ApiConfig.getMessage).replace(queryParameters: {
+  'from_user': widget.loggedInUserId.toString(),
+  'to_user': widget.otherUserId.toString(),
+     });
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            messages = List<Map<String, dynamic>>.from(data['messages']);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching messages: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
-    // connect to your Node.js server
+    // Connect to Node.js WebSocket server
     channel = WebSocketChannel.connect(Uri.parse(ApiConfig.websocketUrl));
 
-    // register this user with the server
+    // Register this user
     channel.sink.add(jsonEncode({
       'type': 'register',
       'userId': widget.loggedInUserId,
     }));
 
-    // listen for messages
+    // Listen for events
     channel.stream.listen((data) {
       final decoded = jsonDecode(data);
       if (decoded['type'] == 'message') {
-        setState(() {
-          messages.add(decoded);
-        });
+        addMessage(decoded);
       } else if (decoded['type'] == 'typing') {
-        // only show typing if it's from the other user
         if (decoded['from_user'] == widget.otherUserId) {
           setState(() {
             isTyping = decoded['isTyping'] ?? false;
@@ -54,11 +89,16 @@ class _ChatPageUpdatedState extends State<ChatPageUpdated> {
         }
       }
     });
+
+    // Load existing history
+    fetchMessages();
   }
 
   @override
   void dispose() {
     channel.sink.close();
+    textController.dispose();
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -73,17 +113,26 @@ class _ChatPageUpdatedState extends State<ChatPageUpdated> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.otherUserName),
-      ),
+      appBar: AppBar(title: Text(widget.otherUserName)),
       body: RealtimeChatContainer(
+        messages: messages,
         loggedInUserId: widget.loggedInUserId,
         otherUserId: widget.otherUserId,
-        otherUserName: widget.otherUserName,
-        messages: messages,
         isTyping: isTyping,
-        sendMessage: _sendMessage,
-        sendTypingStatus: _sendTypingStatus,
+        sendMessage: (msg) async {
+          _sendMessage(msg);
+          // Persist to DB
+          await http.post(
+            Uri.parse(ApiConfig.sendMessage),
+            body: {
+              'from_user': msg['from_user'].toString(),
+              'to_user': msg['to_user'].toString(),
+              'message': msg['message'],
+            },
+          );
+        },
+        textController: textController,
+        scrollController: scrollController,
       ),
     );
   }

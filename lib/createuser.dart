@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import '../config/api.dart';
 
 // Define the ImageCarousel widget here or import it if it's in a separate file
 // For simplicity, I'm including it directly in main.dart for this example.
@@ -157,7 +158,8 @@ class _CreateUserPageState extends State<CreateUserPage> {
     try {
       // Connect to your local database
       final response = await http.get(
-        Uri.parse("http://localhost/flutter_api/get_users.php"),
+        Uri.parse(ApiConfig.getUsers),
+
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -253,11 +255,12 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
                   String url;
                   if (user == null) {
-                    url = "http://localhost/flutter_api/create_user.php";
+                    url = ApiConfig.createUser;
                   } else {
-                    url = "http://localhost/flutter_api/edit_user.php";
+                    url = ApiConfig.editUser;
                     body["id"] = user['id'].toString();
                   }
+
 
                   final response = await http.post(
                     Uri.parse(url),
@@ -317,7 +320,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
   Future<void> deleteUser(String id) async {
     try {
       final response = await http.post(
-        Uri.parse("http://localhost/flutter_api/delete_user.php"),
+        Uri.parse(ApiConfig.deleteUser),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

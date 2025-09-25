@@ -11,21 +11,16 @@ import 'uploads_page.dart'; // Import uploads page for navigation
 import 'payment_webview.dart';
 import '../config/api.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:url_launcher/url_launcher.dart';
+import 'reservation_calendar.dart' as rc; // ✅ import the new calendar widget
 
 /// User dashboard widget.
-///
-
-/// - Messaging with admin
-/// - Viewing and editing profile
-/// - Uploading 360-degree views
-/// - Making and viewing reservations
 class User extends StatelessWidget {
   const User({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final int currentUserId = globals.loggedInUserId ?? 0; // Get from globals instead of SessionManager
+    final int currentUserId =
+        globals.loggedInUserId ?? 0; // Get from globals instead of SessionManager
 
     // DEBUG: Print the current user ID
     print("DEBUG: Current user ID from globals: $currentUserId");
@@ -68,8 +63,6 @@ class User extends StatelessWidget {
         ],
       ),
 
-      // Drawer removed as per request
-
       // --- Main Body ---
       body: Stack(
         children: [
@@ -80,7 +73,7 @@ class User extends StatelessWidget {
             ),
           ),
           Container(
-            color: Colors.black.withOpacity(0.6), // increased opacity for better visibility
+            color: Colors.black.withOpacity(0.6),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -97,16 +90,16 @@ class User extends StatelessWidget {
                         width: 120,
                         child: TextButton.icon(
                           icon: const Icon(Icons.dashboard),
-                          label: const Text('Dashboard', style: TextStyle(color: Colors.white)),
-                          onPressed: () {
-                            // No navigation, just close menu equivalent
-                          },
+                          label: const Text('Dashboard',
+                              style: TextStyle(color: Colors.white)),
+                          onPressed: () {},
                         ),
                       ),
                       SizedBox(width: 24),
                       TextButton.icon(
                         icon: const Icon(Icons.bookmark),
-                        label: const Text('My Reservations', style: TextStyle(color: Colors.white)),
+                        label: const Text('My Reservations',
+                            style: TextStyle(color: Colors.white)),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -119,7 +112,8 @@ class User extends StatelessWidget {
                       SizedBox(width: 24),
                       TextButton.icon(
                         icon: const Icon(Icons.message),
-                        label: const Text('Messages', style: TextStyle(color: Colors.white)),
+                        label: const Text('Messages',
+                            style: TextStyle(color: Colors.white)),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -136,13 +130,14 @@ class User extends StatelessWidget {
                       SizedBox(width: 24),
                       TextButton.icon(
                         icon: const Icon(Icons.person),
-                        label: const Text('Profile', style: TextStyle(color: Colors.white)),
+                        label: const Text('Profile',
+                            style: TextStyle(color: Colors.white)),
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => ProfilePage(
-                                userId: currentUserId ?? 0,
+                                userId: currentUserId,
                               ),
                             ),
                           );
@@ -151,38 +146,55 @@ class User extends StatelessWidget {
                       SizedBox(width: 24),
                       TextButton.icon(
                         icon: const Icon(Icons.upload_file),
-                        label: const Text('360 Viewing', style: TextStyle(color: Colors.white)),
+                        label: const Text('360 Viewing',
+                            style: TextStyle(color: Colors.white)),
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const UploadsPage()),
+                            MaterialPageRoute(
+                                builder: (context) => const UploadsPage()),
                           );
                         },
                       ),
                     ],
                   ),
                 ),
-                // Logout button moved to upper right in app bar actions
                 const Divider(),
-                // Existing content below
+
+                // Existing content
                 Text(
                   'Current User ID: $currentUserId',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  child: const Text('Make a Reservation', style: TextStyle(color: Colors.white)),
+                  child: const Text('Make a Reservation',
+                      style: TextStyle(color: Colors.white)),
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            ReservationForm(userId: currentUserId ?? 0),
+                        builder: (_) => ReservationForm(userId: currentUserId),
                       ),
                     );
                   },
                 ),
                 const SizedBox(height: 16),
+
+                // 👇 Always-visible Calendar
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white, // 👈 white background
+                      borderRadius: BorderRadius.circular(12), // optional: rounded corners
+                    ),
+                    child: rc.ReservationCalendar(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -193,9 +205,6 @@ class User extends StatelessWidget {
 }
 
 /// Reservation form widget for creating new reservations.
-///
-/// Allows users to select package type, day type, date, and number of guests.
-/// Integrates with PayMongo for payment processing.
 class ReservationForm extends StatefulWidget {
   final int userId;
 
@@ -209,9 +218,9 @@ class _ReservationFormState extends State<ReservationForm> {
   List<dynamic> packageTypes = [];
   final List<String> dayTypes = ['Day Tour', 'Overnight', 'Whole Day'];
 
-  int? selectedPackageId; // store as int
+  int? selectedPackageId;
   String? selectedDayType;
-  String? selectedWeekType; // auto-detected by date picker
+  String? selectedWeekType;
 
   final TextEditingController guestsController = TextEditingController();
   DateTime? selectedDate;
@@ -233,8 +242,7 @@ class _ReservationFormState extends State<ReservationForm> {
 
   Future<void> fetchPackageTypes() async {
     try {
-      final url = Uri.parse(
-          'http://192.168.100.238/flutter_api/reservation_get_packages.php');
+      final url = Uri.parse(ApiConfig.reservationGetPackages);
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -242,15 +250,13 @@ class _ReservationFormState extends State<ReservationForm> {
 
         if (data['success'] == true && data['packages'] != null) {
           setState(() {
-            packageTypes = data['packages']; // use "packages" array
+            packageTypes = data['packages'];
             isLoading = false;
           });
         } else {
-          print('No packages found or success=false');
           setState(() => isLoading = false);
         }
       } else {
-        print('Failed to load packages: ${response.statusCode}');
         setState(() => isLoading = false);
       }
     } catch (e) {
@@ -266,7 +272,6 @@ class _ReservationFormState extends State<ReservationForm> {
       firstDate: DateTime.now().add(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       selectableDayPredicate: (DateTime date) {
-        // disable today
         return !date.isAtSameMomentAs(DateTime(
           DateTime.now().year,
           DateTime.now().month,
@@ -290,127 +295,117 @@ class _ReservationFormState extends State<ReservationForm> {
       );
     }
   }
-void submitForm() async {
-  if (!_formKey.currentState!.validate()) return;
 
-  if (selectedPackageId == null || selectedDayType == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select all dropdown fields')),
-    );
-    return;
-  }
+  void submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  if (selectedDate == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select a reservation date')),
-    );
-    return;
-  }
+    if (selectedPackageId == null || selectedDayType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select all dropdown fields')),
+      );
+      return;
+    }
 
-  final guests = int.tryParse(guestsController.text);
-  if (guests == null || guests <= 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please enter a valid number of guests')),
-    );
-    return;
-  }
+    if (selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a reservation date')),
+      );
+      return;
+    }
 
-  final data = {
-    'user_id': widget.userId,
-    'package_id': selectedPackageId,
-    'day_type': selectedDayType,
-    'week_type': selectedWeekType,
-    'guests': guests,
-    'reservation_date':
-        '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}',
-  };
+    final guests = int.tryParse(guestsController.text);
+    if (guests == null || guests <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid number of guests')),
+      );
+      return;
+    }
 
-  print('DEBUG: Sending reservation: ${json.encode(data)}');
+    final data = {
+      'user_id': widget.userId,
+      'package_id': selectedPackageId,
+      'day_type': selectedDayType,
+      'week_type': selectedWeekType,
+      'guests': guests,
+      'reservation_date':
+          '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}',
+    };
 
-  try {
-    // Step 1: Create Reservation
-    final response = await http.post(
-      Uri.parse(ApiConfig.createReservation),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(data),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.createReservation),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data),
+      );
 
-    if (response.statusCode == 200) {
-      final res = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final res = json.decode(response.body);
 
-      if (res['success'] == true) {
-        final reservationId = res['reservation_id'];
-        final totalAmount = res['total_amount']; // make sure backend sends this
+        if (res['success'] == true) {
+          final reservationId = res['reservation_id'];
+          final totalAmount = res['total_amount'];
 
-        // Step 2: Create Payment in PayMongo
-        final paymentResponse = await http.post(
-          Uri.parse(ApiConfig.createPayment),
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'reservation_id': reservationId,
-            'amount': totalAmount,
-          }),
-        );
-
-        final payData = json.decode(paymentResponse.body);
-        print('DEBUG: PayMongo create_payment response: $payData');
-
-        if (payData['success'] == true && payData['checkout_url'] != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Redirecting to PayMongo checkout...')),
+          final paymentResponse = await http.post(
+            Uri.parse(ApiConfig.createPayment),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'reservation_id': reservationId,
+              'amount': totalAmount,
+            }),
           );
 
-          // Step 3: Launch PayMongo checkout depending on platform
-          if (kIsWeb) {
-            // On web, open in same tab (or new tab if you change _self to _blank)
-            await launchUrl(
-              Uri.parse(payData['checkout_url']),
-              mode: LaunchMode.platformDefault,
-              webOnlyWindowName: '_self', // '_self' same tab, '_blank' new tab
+          final payData = json.decode(paymentResponse.body);
+
+          if (payData['success'] == true && payData['checkout_url'] != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Redirecting to PayMongo checkout...')),
             );
+
+            if (kIsWeb) {
+              await launchUrl(
+                Uri.parse(payData['checkout_url']),
+                mode: LaunchMode.platformDefault,
+                webOnlyWindowName: '_self',
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      PaymentWebView(checkoutUrl: payData['checkout_url']),
+                ),
+              );
+            }
+
+            setState(() {
+              selectedPackageId = null;
+              selectedDayType = null;
+              selectedWeekType = null;
+              guestsController.clear();
+              selectedDate = null;
+            });
           } else {
-            // On mobile, show embedded WebView
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    PaymentWebView(checkoutUrl: payData['checkout_url']),
-              ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Payment error: ${payData['error']}')),
             );
           }
-
-          // Reset form
-          setState(() {
-            selectedPackageId = null;
-            selectedDayType = null;
-            selectedWeekType = null;
-            guestsController.clear();
-            selectedDate = null;
-          });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Payment error: ${payData['error']}')),
+            SnackBar(content: Text('Failed: ${res['error'] ?? 'Unknown error'}')),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: ${res['error'] ?? 'Unknown error'}')),
+          SnackBar(content: Text('Server error: ${response.statusCode}')),
         );
       }
-    } else {
+    } catch (e) {
+      print('DEBUG: Exception: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Server error: ${response.statusCode}')),
+        SnackBar(content: Text('An error occurred: $e')),
       );
     }
-  } catch (e) {
-    print('DEBUG: Exception: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('An error occurred: $e')),
-    );
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -447,7 +442,8 @@ void submitForm() async {
             children: [
               Text(
                 'Making reservation for User ID: ${widget.userId}',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
 
@@ -457,7 +453,7 @@ void submitForm() async {
                 value: selectedPackageId,
                 items: packageTypes.map<DropdownMenuItem<int>>((item) {
                   return DropdownMenuItem(
-                    value: int.parse(item['id'].toString()), // force int
+                    value: int.parse(item['id'].toString()),
                     child: Text(item['name']),
                   );
                 }).toList(),

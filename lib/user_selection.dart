@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'chatpage_updated.dart'; // Importing ChatPageUpdated
 import 'package:flutter_application_1/globals.dart' as globals; 
+import '../config/api.dart';
+
 
 class UserSelection extends StatefulWidget {
   final Function(int userId, String userName) onUserSelected;
@@ -28,7 +30,7 @@ class _UserSelectionState extends State<UserSelection> {
     try {
       print("Fetching users from API...");
       final response = await http.get(
-        Uri.parse("http://192.168.100.238/flutter_api/get_users.php"),
+        Uri.parse(ApiConfig.getUsers),
       ).timeout(Duration(seconds: 10));
 
       print("Response Status Code: ${response.statusCode}");
